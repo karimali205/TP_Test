@@ -2,755 +2,1117 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>HR Attrition Analytics — Executive & Technical Documentation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teleperformance | Workforce Attrition Insights</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          display: ['Plus Jakarta Sans', 'sans-serif'],
+          body: ['Inter', 'sans-serif'],
+        },
+        colors: {
+          navy: {
+            950: '#0A1424',
+            900: '#0F1B2D',
+            800: '#16253B',
+            700: '#1E3149',
+          },
+          accent: {
+            DEFAULT: '#E10A6E',
+            50: '#FDF0F6',
+            100: '#FBE0EE',
+            600: '#C6095F',
+            700: '#A30750',
+          },
+        },
+        boxShadow: {
+          card: '0 1px 2px rgba(15, 27, 45, 0.04), 0 1px 3px rgba(15, 27, 45, 0.06)',
+          'card-hover': '0 4px 12px rgba(15, 27, 45, 0.08), 0 2px 6px rgba(15, 27, 45, 0.06)',
+        },
+      },
+    },
+  };
+</script>
 <style>
-  @page {
-    size: A4 portrait;
-    margin: 0;
+  :root { color-scheme: light; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
+  .font-display { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
-  body {
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-    color: #0F1B2D;
-    background: #FFFFFF;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  @keyframes drawRing {
+    from { stroke-dashoffset: 251.2; }
+    to   { stroke-dashoffset: var(--ring-offset); }
   }
 
-  /* Page container strictly fits A4: 210mm x 297mm */
-  .page {
-    width: 210mm;
-    height: 297mm;
-    padding: 10mm 11mm;
-    page-break-after: always;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    background: #FFFFFF;
-    position: relative;
-  }
-  .page:last-child {
-    page-break-after: auto;
+  .anim-hero { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .anim-card { opacity: 0; animation: fadeInUp 0.5s ease-in-out both; }
+
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.12s; }
+  .stagger-3 { animation-delay: 0.19s; }
+  .stagger-4 { animation-delay: 0.26s; }
+  .stagger-5 { animation-delay: 0.33s; }
+  .stagger-6 { animation-delay: 0.4s; }
+
+  .ring-progress {
+    stroke-dasharray: 251.2;
+    stroke-dashoffset: 251.2;
+    animation: drawRing 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+    transform-origin: center;
+    transform: rotate(-90deg);
   }
 
-  /* Elegant Outer Frame / Border */
-  .frame {
-    border: 1.5px solid #CBD5E1;
-    border-radius: 8px;
-    height: 100%;
-    padding: 18px 22px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    background: #FFFFFF;
-    position: relative;
+  @media (prefers-reduced-motion: reduce) {
+    .anim-hero, .anim-card, .ring-progress, .risk-bar-fill {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+      stroke-dashoffset: var(--ring-offset, 0) !important;
+    }
   }
 
-  /* Top accent line */
-  .top-accent {
-    position: absolute;
-    top: -1.5px;
-    left: 20px;
-    right: 20px;
-    height: 3px;
-    background: linear-gradient(90deg, #E10A6E 0%, #00529F 100%);
-    border-radius: 3px 3px 0 0;
+  .tab-btn { position: relative; transition: color 220ms ease-in-out; }
+  .tab-underline {
+    position: absolute; left: 0; bottom: -1px; height: 2px; width: 100%;
+    background-color: #E10A6E; transform: scaleX(0); transform-origin: left;
+    transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
   }
+  .tab-btn[aria-selected="true"] .tab-underline { transform: scaleX(1); }
+  .tab-btn[aria-selected="true"] { color: #0F1B2D; }
+  .tab-panel { animation: fadeIn 320ms ease-in-out both; }
 
-  /* Header */
-  .header {
-    border-bottom: 1.5px solid #E2E8F0;
-    padding-bottom: 10px;
-    margin-bottom: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid #E10A6E; outline-offset: 2px; border-radius: 4px;
   }
-  .brand-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .brand-logo-text {
-    font-size: 15px;
-    font-weight: 900;
-    color: #0F1B2D;
-    letter-spacing: -0.3px;
-  }
-  .brand-divider {
-    height: 16px;
-    width: 1px;
-    background: #CBD5E1;
-  }
-  .brand-sub {
-    font-size: 9.5px;
-    font-weight: 700;
-    color: #64748B;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-  }
-  .doc-meta {
-    text-align: right;
-    font-size: 9px;
-    color: #64748B;
-    line-height: 1.35;
-  }
-  .doc-meta strong {
-    color: #0F1B2D;
-  }
-  .doc-meta a {
-    color: #00529F;
-    text-decoration: none;
-    font-weight: 600;
-  }
+  ::selection { background-color: #FBE0EE; color: #0F1B2D; }
 
-  /* Titles */
-  .doc-title-block {
-    margin-bottom: 11px;
-  }
-  .doc-category {
-    font-size: 8.5px;
-    font-weight: 800;
-    color: #E10A6E;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 2px;
-  }
-  .doc-title {
-    font-size: 17.5px;
-    font-weight: 800;
-    color: #0F1B2D;
-    line-height: 1.2;
-    letter-spacing: -0.2px;
-  }
-  .doc-subtitle {
-    font-size: 10px;
-    color: #475569;
-    margin-top: 3px;
-    line-height: 1.4;
-  }
-
-  /* Section Styling */
-  .section {
-    margin-bottom: 11px;
-  }
-  .section-title {
-    font-size: 11px;
-    font-weight: 800;
-    color: #0F1B2D;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    border-left: 3px solid #E10A6E;
-    padding-left: 7px;
-    margin-bottom: 6px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .section-title span.tag {
-    font-size: 8px;
-    font-weight: 700;
-    color: #00529F;
-    background: #F0F7FF;
-    border: 1px solid #BAE6FD;
-    padding: 1px 6px;
-    border-radius: 10px;
-    text-transform: none;
-  }
-  p.lead-text {
-    font-size: 9.5px;
-    color: #334155;
-    line-height: 1.45;
-    margin-bottom: 7px;
-  }
-
-  /* KPI Grid */
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 7px;
-    margin-bottom: 11px;
-  }
-  .kpi-card {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 6px;
-    padding: 7px 9px;
-    position: relative;
-    overflow: hidden;
-  }
-  .kpi-card.highlight {
-    border-color: #FBCFE8;
-    background: #FFF5F9;
-  }
-  .kpi-card-stripe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: #00529F;
-  }
-  .kpi-card.highlight .kpi-card-stripe {
-    background: #E10A6E;
-  }
-  .kpi-label {
-    font-size: 8px;
-    font-weight: 700;
-    color: #64748B;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .kpi-value {
-    font-size: 15px;
-    font-weight: 800;
-    color: #0F1B2D;
-    margin: 2px 0 1px 0;
-  }
-  .kpi-card.highlight .kpi-value {
-    color: #E10A6E;
-  }
-  .kpi-desc {
-    font-size: 8px;
-    color: #475569;
-    line-height: 1.25;
-  }
-
-  /* 2-Column Content Layout */
-  .cols-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  /* Compact Cards / Boxes */
-  .box {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 6px;
-    padding: 8px 10px;
-    font-size: 9px;
-    color: #334155;
-    line-height: 1.4;
-  }
-  .box-title {
-    font-weight: 800;
-    color: #0F1B2D;
-    font-size: 9.5px;
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .box-title .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #E10A6E;
-    display: inline-block;
-  }
-  .box-title .dot.blue {
-    background: #00529F;
-  }
-
-  /* Clean Tables */
-  table.compact-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 8.5px;
-    margin-top: 4px;
-  }
-  table.compact-table th {
-    background: #0F1B2D;
-    color: #FFFFFF;
-    text-align: left;
-    padding: 4px 6px;
-    font-weight: 700;
-    font-size: 8px;
-    letter-spacing: 0.3px;
-  }
-  table.compact-table td {
-    padding: 3.5px 6px;
-    border-bottom: 1px solid #E2E8F0;
-    color: #1E293B;
-  }
-  table.compact-table tr:nth-child(even) td {
-    background: #F8FAFC;
-  }
-  table.compact-table td.bold {
-    font-weight: 700;
-  }
-  table.compact-table td.danger {
-    color: #E10A6E;
-    font-weight: 700;
-  }
-
-  /* Bullet Lists */
-  ul.doc-list {
-    list-style: none;
-    margin-top: 3px;
-  }
-  ul.doc-list li {
-    position: relative;
-    padding-left: 11px;
-    margin-bottom: 3.5px;
-    font-size: 8.8px;
-    line-height: 1.35;
-    color: #334155;
-  }
-  ul.doc-list li::before {
-    content: "•";
-    position: absolute;
-    left: 2px;
-    color: #E10A6E;
-    font-weight: bold;
-  }
-  ul.doc-list.blue li::before {
-    color: #00529F;
-  }
-
-  /* Callout Pill Strip */
-  .callout-strip {
-    background: #FFF0F6;
-    border-left: 3px solid #E10A6E;
-    padding: 6px 9px;
-    border-radius: 0 5px 5px 0;
-    font-size: 8.8px;
-    color: #0F1B2D;
-    line-height: 1.4;
-    margin-top: 6px;
-  }
-  .callout-strip strong {
-    color: #E10A6E;
-  }
-
-  /* Code Block */
-  .code-box {
-    background: #0F1B2D;
-    color: #E2E8F0;
-    padding: 6px 8px;
-    border-radius: 5px;
-    font-family: 'Consolas', monospace;
-    font-size: 7.8px;
-    line-height: 1.3;
-    overflow: hidden;
-  }
-  .code-box .kw { color: #FF79C6; font-weight: bold; }
-  .code-box .fn { color: #50FA7B; }
-  .code-box .str { color: #F1FA8C; }
-
-  /* Footer */
-  .footer {
-    border-top: 1px solid #E2E8F0;
-    padding-top: 8px;
-    margin-top: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 8px;
-    color: #64748B;
-  }
-  .footer-left {
-    font-weight: 600;
-  }
-  .footer-right {
-    font-weight: 700;
-    color: #0F1B2D;
-  }
+  .risk-bar-fill { animation: growBar 1.1s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  @keyframes growBar { from { width: 0%; } }
 </style>
 </head>
-<body>
+<body class="text-navy-900 antialiased">
 
-<!-- ========================================== -->
-<!-- PAGE 1: DIAGNOSTIC CONTEXT & DATA MODEL -->
-<!-- ========================================== -->
-<div class="page">
-  <div class="frame">
-    <div class="top-accent"></div>
-
-    <!-- Header -->
-    <div>
-      <div class="header">
-        <div class="brand-group">
-          <!-- TP Monogram Vector -->
-          <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-            <circle cx="8" cy="8" r="4" fill="#E10A6E"/>
-            <circle cx="18" cy="8" r="4" fill="#00529F"/>
-            <circle cx="25" cy="15" r="4" fill="#118DFF"/>
-            <circle cx="18" cy="22" r="4" fill="#7C3AED"/>
-            <circle cx="8" cy="22" r="4" fill="#E10A6E"/>
-            <circle cx="4" cy="15" r="4" fill="#F43F5E"/>
-          </svg>
-          <span class="brand-logo-text">Teleperformance</span>
-          <div class="brand-divider"></div>
-          <span class="brand-sub">GBS BI HUB &bull; Case Study Assessment</span>
-        </div>
-        <div class="doc-meta">
-          <strong>Deliverable 1: Technical & Executive Documentation</strong><br>
-          Live Interactive Hub: <a href="https://karimali205.github.io/TP_Test/" target="_blank">karimali205.github.io/TP_Test</a>
-        </div>
-      </div>
-
-      <!-- Title Block -->
-      <div class="doc-title-block">
-        <div class="doc-category">Workforce Diagnostic & Strategic Retention Framework</div>
-        <h1 class="doc-title">HR Attrition Analytics: Solving the 16.1% Turnover Baseline</h1>
-        <p class="doc-subtitle">
-          An end-to-end Power BI, SQL, and Python diagnostic transforming 1,470 employee records into root cause insights, normalized Star Schema dimensional modeling, and prioritized financial ROI interventions.
-        </p>
-      </div>
-
-      <!-- 4 KPI Headline Blocks -->
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-card-stripe"></div>
-          <div class="kpi-label">Total Workforce</div>
-          <div class="kpi-value">1,470</div>
-          <div class="kpi-desc">3 Departments &bull; 9 Roles</div>
-        </div>
-        <div class="kpi-card highlight">
-          <div class="kpi-card-stripe"></div>
-          <div class="kpi-label">Departures (Attrition)</div>
-          <div class="kpi-value">237 (16.1%)</div>
-          <div class="kpi-desc">Baseline organizational flight rate</div>
-        </div>
-        <div class="kpi-card highlight">
-          <div class="kpi-card-stripe"></div>
-          <div class="kpi-label">Overtime Multiplier</div>
-          <div class="kpi-value">3.0&times; Risk</div>
-          <div class="kpi-desc">30.5% leavers (OT) vs 10.4% (Standard)</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-card-stripe"></div>
-          <div class="kpi-label">Base Salary Chasm</div>
-          <div class="kpi-value">$2,046 / mo</div>
-          <div class="kpi-desc">Stayers ($6,833) vs Leavers ($4,787)</div>
-        </div>
-      </div>
-
-      <!-- Section 1: Business Context & Core Findings -->
-      <div class="section">
-        <div class="section-title">
-          1. Business Context & Critical Turnover Drivers
-          <span class="tag">Empirical Diagnostics</span>
-        </div>
-        <p class="lead-text">
-          Enterprise analysis demonstrates that employee attrition is <strong>not an organizational-wide contagion</strong>, but a concentrated, surgical operational failure. Departures are heavily clustered within low-equity, early-career operational staff subject to aggressive overtime demands.
-        </p>
-        <div class="cols-2">
-          <div class="box">
-            <div class="box-title"><span class="dot"></span>Primary Flight Catalysts</div>
-            <ul class="doc-list">
-              <li><strong>The Overtime Squeeze:</strong> Employees required to work overtime experience a <strong>30.5% exit rate</strong> (127 leavers, representing 53.6% of all company exits), compared to just 10.4% among standard-hour staff.</li>
-              <li><strong>Equity Ownership As An Anchor:</strong> Staff with zero stock options register <strong>24.4% attrition</strong> (154 exits). Granting Level-1 equity participation collapses turnover to <strong>8.5% (~65% reduction)</strong>.</li>
-              <li><strong>Role-Level Exposure:</strong> Sales Representatives face an extreme <strong>39.8% attrition rate</strong> (33 leavers), followed by Laboratory Technicians at <strong>23.9%</strong> (62 leavers). 84.0% of all company departures originate from just 4 operational roles.</li>
-            </ul>
-          </div>
-          <div class="box">
-            <div class="box-title"><span class="dot blue"></span>Career & Demographic Outliers</div>
-            <ul class="doc-list blue">
-              <li><strong>The Year-1 Onboarding Cliff:</strong> 75 of 237 departures (<strong>31.6%</strong>) exit within their very first year of tenure, indicating an acute onboarding vulnerability in fast-paced production roles.</li>
-              <li><strong>Tenure Stagnation Anomaly:</strong> Identification of <strong>29 long-tenured veteran leavers</strong> (7–15 years without promotion), including Senior Research Directors with up to 31 years of tenure exiting due to career ceilings.</li>
-              <li><strong>Toxic Compounding Hazard:</strong> Single employees working overtime with zero equity in entry roles experience turnover exceeding <strong>50.0%</strong>.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <!-- Section 2: Data Model & Schema Architecture -->
-      <div class="section">
-        <div class="section-title">
-          2. VertiPaq Star Schema & Architectural Design
-          <span class="tag">Production Data Model</span>
-        </div>
-        <p class="lead-text">
-          Rather than querying a fragile single flat table, the architecture establishes a normalized <strong>Star Schema</strong> inside Power BI VertiPaq. This separates high-volume transaction records from analytical dimensions, optimizing RAM compression and query performance.
-        </p>
-        <div class="cols-2">
-          <div>
-            <table class="compact-table">
-              <thead>
-                <tr>
-                  <th>Table Name</th>
-                  <th>Type</th>
-                  <th>Key Columns / Grain</th>
-                  <th>Cardinality</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="bold">Fact_Employee</td>
-                  <td>Central Fact</td>
-                  <td>1,470 records &bull; PK: EmployeeNumber</td>
-                  <td>Core Grain</td>
-                </tr>
-                <tr>
-                  <td class="bold">Dim_Department</td>
-                  <td>Dimension</td>
-                  <td>DeptID (PK), DepartmentName</td>
-                  <td>1 : * (Single)</td>
-                </tr>
-                <tr>
-                  <td class="bold">Dim_JobRole</td>
-                  <td>Dimension</td>
-                  <td>RoleID (PK), JobRoleName (9 Roles)</td>
-                  <td>1 : * (Single)</td>
-                </tr>
-                <tr>
-                  <td class="bold">Dim_SatisfactionScale</td>
-                  <td>Dimension</td>
-                  <td>ScaleID (1–4), ScaleLabel</td>
-                  <td>1 : * (USERELATIONSHIP)</td>
-                </tr>
-                <tr>
-                  <td class="bold">Dim_Education</td>
-                  <td>Dimension</td>
-                  <td>EducationID (PK), Field, Level</td>
-                  <td>1 : * (Single)</td>
-                </tr>
-                <tr>
-                  <td class="bold">Dim_Demographics</td>
-                  <td>Dimension</td>
-                  <td>Gender, MaritalStatus, Age Band</td>
-                  <td>1 : * (Single)</td>
-                </tr>
-                <tr>
-                  <td class="bold">Dim_Employment</td>
-                  <td>Dimension</td>
-                  <td>JobLevel, OverTime, StockOptionLevel</td>
-                  <td>1 : * (Single)</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div>
-            <div class="box" style="height: 100%;">
-              <div class="box-title"><span class="dot"></span>Core DAX Mathematical Engine</div>
-              <div class="code-box">
-<span class="kw">Attrition Rate %</span> = 
-<span class="fn">DIVIDE</span>(<span class="fn">SUM</span>(Fact_Employee[AttritionFlag]), <span class="fn">COUNTROWS</span>(Fact_Employee), 0)
-
-<span class="kw">Overtime Attrition Gap</span> = 
-<span class="kw">VAR</span> OT = <span class="fn">CALCULATE</span>([Attrition Rate %], Fact_Employee[OverTime]=<span class="str">"Yes"</span>)
-<span class="kw">VAR</span> NonOT = <span class="fn">CALCULATE</span>([Attrition Rate %], Fact_Employee[OverTime]=<span class="str">"No"</span>)
-<span class="kw">RETURN</span> OT - NonOT
-              </div>
-              <div class="callout-strip">
-                <strong>Architectural Note:</strong> Relationships use 1-to-many unidirectional filters. Active/inactive links for satisfaction metrics are switched dynamically via <code>USERELATIONSHIP()</code> to preserve star schema integrity.
-              </div>
-            </div>
-          </div>
-        </div>
+<!-- ============ HEADER ============ -->
+<header class="border-b border-slate-200 bg-white/90 backdrop-blur sticky top-0 z-40">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3.5 min-w-0">
+      <!-- Crisp Inline Vector Logo for Teleperformance -->
+      <a href="#" class="flex items-center gap-2.5 focus:outline-none group">
+        <svg class="h-8 sm:h-9 w-auto shrink-0" viewBox="0 0 160 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Teleperformance Logo">
+          <!-- TP Stylized Constellation Symbol -->
+          <circle cx="9" cy="9" r="4.2" fill="#E10A6E"/>
+          <circle cx="19" cy="9" r="4.2" fill="#00529F"/>
+          <circle cx="27" cy="17" r="4.2" fill="#118DFF"/>
+          <circle cx="19" cy="25" r="4.2" fill="#7C3AED"/>
+          <circle cx="9" cy="25" r="4.2" fill="#E10A6E" fill-opacity="0.8"/>
+          <circle cx="5" cy="17" r="4.2" fill="#F43F5E"/>
+          <circle cx="16" cy="17" r="3.2" fill="#0F1B2D"/>
+          <!-- Brand Wordmark -->
+          <text x="38" y="23" font-family="'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif" font-weight="800" font-size="16.5" fill="#0F1B2D" letter-spacing="-0.3">teleperformance</text>
+        </svg>
+      </a>
+      <div class="hidden sm:block h-5 w-px bg-slate-300"></div>
+      <div class="hidden sm:flex flex-col">
+        <span class="text-xs font-bold tracking-wider text-navy-900 uppercase">GBS BI HUB</span>
+        <span class="text-[10px] font-medium text-slate-500 leading-none">Workforce Diagnostic Suite</span>
       </div>
     </div>
+    <button
+      id="info-trigger"
+      type="button"
+      aria-haspopup="dialog"
+      aria-expanded="false"
+      aria-controls="info-sidebar"
+      aria-label="Open page navigation"
+      title="Jump to a section"
+      class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-accent-50 text-accent-700 ring-1 ring-inset ring-accent-100 shrink-0 transition-all duration-200 ease-in-out hover:bg-accent-100 hover:ring-accent/30 hover:scale-[1.05]"
+    >
+      <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 5A.75.75 0 012.75 9h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 9.75zM2.75 14a.75.75 0 000 1.5h14.5a.75.75 0 000-1.5H2.75z" clip-rule="evenodd"/>
+      </svg>
+    </button>
+  </div>
+</header>
 
-    <!-- Footer -->
-    <div class="footer">
-      <div class="footer-left">Teleperformance &bull; Global Business Services (GBS BI Hub) &bull; Case Study Deliverable</div>
-      <div class="footer-right">Page 1 of 2</div>
+<!-- ============ INFO SIDEBAR ============ -->
+<div
+  id="info-overlay"
+  class="fixed inset-0 bg-navy-950/40 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out"
+></div>
+<aside
+  id="info-sidebar"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="info-sidebar-title"
+  class="fixed top-0 right-0 h-full w-[88%] max-w-sm bg-white z-50 shadow-2xl translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+>
+  <div class="flex items-center justify-between px-6 py-5 border-b border-slate-200 shrink-0">
+    <h2 id="info-sidebar-title" class="font-display text-base font-bold text-navy-900">Jump to a Section</h2>
+    <button id="info-close" type="button" aria-label="Close panel" class="rounded-full p-1.5 text-slate-400 transition-colors duration-200 ease-in-out hover:bg-slate-100 hover:text-navy-900">
+      <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="overflow-y-auto px-4 py-5 space-y-1.5 flex-1">
+    <p class="px-2 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Detailed Insights</p>
+
+    <button type="button" data-goto="drivers" class="nav-goto-btn w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3.5 text-left transition-all duration-200 ease-in-out hover:bg-accent-50 hover:scale-[1.01]">
+      <span>
+        <span class="block text-sm font-semibold text-navy-900">Attrition Drivers</span>
+        <span class="block text-xs text-slate-500 mt-0.5">What conditions push exit risk up</span>
+      </span>
+      <svg class="h-4 w-4 text-slate-400 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+    </button>
+
+    <button type="button" data-goto="roles" class="nav-goto-btn w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3.5 text-left transition-all duration-200 ease-in-out hover:bg-accent-50 hover:scale-[1.01]">
+      <span>
+        <span class="block text-sm font-semibold text-navy-900">Department &amp; Role Breakdown</span>
+        <span class="block text-xs text-slate-500 mt-0.5">Where risk concentrates by team</span>
+      </span>
+      <svg class="h-4 w-4 text-slate-400 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+    </button>
+
+    <button type="button" data-goto="comp" class="nav-goto-btn w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3.5 text-left transition-all duration-200 ease-in-out hover:bg-accent-50 hover:scale-[1.01]">
+      <span>
+        <span class="block text-sm font-semibold text-navy-900">Compensation &amp; Tenure</span>
+        <span class="block text-xs text-slate-500 mt-0.5">Pay, equity, and time-at-company patterns</span>
+      </span>
+      <svg class="h-4 w-4 text-slate-400 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+    </button>
+
+    <button type="button" data-goto="risk" class="nav-goto-btn w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3.5 text-left transition-all duration-200 ease-in-out hover:bg-accent-50 hover:scale-[1.01]">
+      <span>
+        <span class="block text-sm font-semibold text-navy-900">Risk Segments</span>
+        <span class="block text-xs text-slate-500 mt-0.5">Highest to lowest exposure groups</span>
+      </span>
+      <svg class="h-4 w-4 text-slate-400 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+    </button>
+
+    <button type="button" data-goto="engagement" class="nav-goto-btn w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3.5 text-left transition-all duration-200 ease-in-out hover:bg-accent-50 hover:scale-[1.01]">
+      <span>
+        <span class="block text-sm font-semibold text-navy-900">Engagement &amp; Satisfaction</span>
+        <span class="block text-xs text-slate-500 mt-0.5">Work-life balance and satisfaction signals</span>
+      </span>
+      <svg class="h-4 w-4 text-slate-400 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+    </button>
+
+    <button type="button" data-goto="human" class="nav-goto-btn w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3.5 text-left transition-all duration-200 ease-in-out hover:bg-accent-50 hover:scale-[1.01]">
+      <span>
+        <span class="block text-sm font-semibold text-navy-900">The Human Story &amp; Personas</span>
+        <span class="block text-xs text-slate-500 mt-0.5">Real employee voices behind the data</span>
+      </span>
+      <svg class="h-4 w-4 text-slate-400 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+    </button>
+
+    <a href="#key-data-outliers" data-goto-scroll-only="true" class="nav-goto-btn flex items-center justify-between gap-3 rounded-xl px-4 py-3.5 text-left transition-all duration-200 ease-in-out hover:bg-rose-50 hover:scale-[1.01]">
+      <span>
+        <span class="block text-sm font-semibold text-rose-700">Key Data Outliers</span>
+        <span class="block text-xs text-slate-500 mt-0.5">Critical statistical anomalies &amp; flight risks</span>
+      </span>
+      <svg class="h-4 w-4 text-rose-600 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+    </a>
+
+    <div class="pt-3 mt-3 border-t border-slate-100">
+      <a href="#recommendations" data-goto-scroll-only="true" class="nav-goto-btn flex items-center justify-between gap-3 rounded-xl px-4 py-3.5 text-left transition-all duration-200 ease-in-out hover:bg-accent-50 hover:scale-[1.01]">
+        <span>
+          <span class="block text-sm font-semibold text-navy-900">Strategic Recommendations</span>
+          <span class="block text-xs text-slate-500 mt-0.5">Where to focus retention investment</span>
+        </span>
+        <svg class="h-4 w-4 text-slate-400 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+      </a>
     </div>
   </div>
-</div>
+</aside>
 
+<main class="max-w-7xl mx-auto px-5 sm:px-8">
 
-<!-- ========================================== -->
-<!-- PAGE 2: MULTI-TOOL PIPELINE & ACTION PLAN  -->
-<!-- ========================================== -->
-<div class="page">
-  <div class="frame">
-    <div class="top-accent"></div>
+  <!-- ============ HERO & EXECUTIVE COMMAND HUB ============ -->
+  <section class="anim-hero pt-8 sm:pt-10 pb-12 sm:pb-16">
+    <div class="rounded-3xl border border-slate-200 bg-gradient-to-b from-white via-slate-50/70 to-white p-6 sm:p-10 shadow-xl shadow-slate-200/40 relative overflow-hidden">
+      <!-- Ambient Brand Glow Effects -->
+      <div class="absolute -top-20 -right-20 w-80 h-80 bg-accent/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-600/5 rounded-full blur-3xl pointer-events-none"></div>
 
-    <!-- Header -->
-    <div>
-      <div class="header">
-        <div class="brand-group">
-          <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-            <circle cx="8" cy="8" r="4" fill="#E10A6E"/>
-            <circle cx="18" cy="8" r="4" fill="#00529F"/>
-            <circle cx="25" cy="15" r="4" fill="#118DFF"/>
-            <circle cx="18" cy="22" r="4" fill="#7C3AED"/>
-            <circle cx="8" cy="22" r="4" fill="#E10A6E"/>
-            <circle cx="4" cy="15" r="4" fill="#F43F5E"/>
-          </svg>
-          <span class="brand-logo-text">Teleperformance</span>
-          <div class="brand-divider"></div>
-          <span class="brand-sub">GBS BI HUB &bull; Case Study Assessment</span>
+      <!-- Top Metadata Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6 relative z-10">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent-50 border border-accent/20 text-accent text-xs font-bold tracking-wider uppercase">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
+          </span>
+          BI Developer Assessment &bull; Executive Data Story
         </div>
-        <div class="doc-meta">
-          <strong>Deliverable 1: Technical & Executive Documentation</strong><br>
-          Live Interactive Hub: <a href="https://karimali205.github.io/TP_Test/" target="_blank">karimali205.github.io/TP_Test</a>
+
+        <div class="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-white/90 backdrop-blur px-3.5 py-1.5 rounded-full border border-slate-200 shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          Diagnostic Scope: <span class="text-navy-900 font-bold">1,470 Employees Evaluated</span>
         </div>
       </div>
 
-      <!-- Section 3: Multi-Tool Synergy (SQL & Python) -->
-      <div class="section">
-        <div class="section-title">
-          3. Multi-Tool Analytics Synergy: SQL Engine & Python ETL
-          <span class="tag">Tasks 7 & 8 Completed</span>
-        </div>
-        <p class="lead-text">
-          Demonstrating senior-level proficiency across the enterprise data stack: raw transactional data is extracted and aggregated via ANSI SQL, stratified and statistically tested in Python, and visualized interactively in Power BI.
+      <!-- Main Headline & Subtitle -->
+      <div class="relative z-10 max-w-4xl">
+        <h1 class="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-navy-900 tracking-tight leading-[1.12]">
+          HR Attrition Analytics: <br class="hidden sm:inline">
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-navy-900 via-navy-800 to-accent">Turning a 16.1% Exit Rate Into a Targeted Action Plan</span>
+        </h1>
+        <p class="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed max-w-3xl font-normal">
+          Every resignation tells a story: uncovering the daily pressures, compensation gaps, and lack of growth that led 237 team members to walk away.
         </p>
-        <div class="cols-2">
-          <div class="box">
-            <div class="box-title"><span class="dot"></span>Task 7: SQL Grouped Aggregation (SQL_Test.md)</div>
-            <div class="code-box">
-<span class="kw">SELECT</span> 
-    d.DepartmentName   <span class="kw">AS</span> Department,
-    jr.JobRoleName      <span class="kw">AS</span> JobRole,
-    <span class="fn">COUNT</span>(<span class="kw">CASE WHEN</span> f.Attrition = <span class="str">'Yes'</span> <span class="kw">THEN</span> 1 <span class="kw">END</span>) <span class="kw">AS</span> AttritionCount,
-    <span class="fn">ROUND</span>(<span class="fn">AVG</span>(f.MonthlyIncome), 2) <span class="kw">AS</span> AvgMonthlyIncome
-<span class="kw">FROM</span> Fact_Employee f
-<span class="kw">JOIN</span> Dim_Department d <span class="kw">ON</span> f.DeptID = d.DeptID
-<span class="kw">JOIN</span> Dim_JobRole jr   <span class="kw">ON</span> f.RoleID = jr.RoleID
-<span class="kw">GROUP BY</span> d.DepartmentName, jr.JobRoleName
-<span class="kw">ORDER BY</span> AttritionCount <span class="kw">DESC</span>, AvgMonthlyIncome <span class="kw">ASC</span>;
+      </div>
+
+      <!-- Human Voice Storyline Strip (Elegantly Integrated) -->
+      <div class="mt-6 p-4 sm:p-5 rounded-2xl bg-white/85 backdrop-blur border border-slate-200/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+        <div class="flex items-start sm:items-center gap-3.5">
+          <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-accent to-pink-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-accent/20">
+            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"/></svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-bold text-accent uppercase tracking-wider">The People Behind The Numbers</span>
+              <span class="text-[10px] text-slate-400 font-medium">&bull; 237 Human Crossroads</span>
             </div>
-            <p style="font-size: 8px; color: #475569; margin-top: 4px;">
-              Executes clean star-schema joins. Accurately identifies top leaver volumes in Lab Technicians (62 leavers, $3,237) and Sales Executives (57 leavers, $6,924).
+            <p class="text-xs sm:text-sm font-medium text-slate-700 italic mt-0.5 leading-snug">
+              &ldquo;237 departures represent 237 unique human crossroads. Behind each statistic are real stories of burnout, unacknowledged loyalty, or career stagnation. Our analytics exist to protect their potential and rebuild retention with empathy.&rdquo;
             </p>
           </div>
-          <div class="box">
-            <div class="box-title"><span class="dot blue"></span>Task 8: Python ETL Stratification (Python_Test.ipynb)</div>
-            <p style="font-size: 8.5px; color: #334155; margin-bottom: 5px;">
-              Automated data pipeline using <code>pandas</code> and relative file paths. Stratifies 1,470 employees by career experience bands and validates data integrity:
+        </div>
+        <div class="hidden lg:flex items-center gap-3 shrink-0 pl-4 border-l border-slate-200 text-xs">
+          <div class="text-right">
+            <p class="font-bold text-navy-900">Enterprise Model</p>
+            <p class="text-[11px] text-slate-500">SQL &bull; Python &bull; Power BI</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Integrated Headline KPI Grid (4 Cohesive High-Impact Cards) -->
+      <div class="mt-8 pt-8 border-t border-slate-200/90 relative z-10">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-display text-xs sm:text-sm font-bold tracking-wider text-slate-500 uppercase">Executive Headline Metrics</h2>
+          <span class="text-xs text-slate-400 font-medium hidden sm:inline">Verified from Excel Benchmark</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Card 1: Attrition ring -->
+          <div class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 ease-in-out hover:shadow-md hover:scale-[1.01] hover:border-accent/40 relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent to-pink-500"></div>
+            <div class="flex items-center gap-4">
+              <svg width="60" height="60" viewBox="0 0 100 100" class="shrink-0">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#F1F5F9" stroke-width="10"/>
+                <circle
+                  cx="50" cy="50" r="40" fill="none"
+                  stroke="#E10A6E" stroke-width="10" stroke-linecap="round"
+                  class="ring-progress" style="--ring-offset: 210.9;"
+                />
+              </svg>
+              <div>
+                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Overall Attrition</p>
+                <p class="font-display text-2xl sm:text-3xl font-black text-navy-900 tabular-nums">16.1%</p>
+                <p class="mt-0.5 text-xs text-slate-500 font-medium">237 of 1,470 staff</p>
+              </div>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <span class="text-slate-500">Baseline Target</span>
+              <span class="font-semibold text-emerald-600">&le; 12.0% Goal</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Overtime -->
+          <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 ease-in-out hover:shadow-md hover:scale-[1.01] hover:border-accent/40 relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent to-purple-600"></div>
+            <div class="flex items-center justify-between mb-1">
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Overtime Multiplier</p>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">Critical Risk</span>
+            </div>
+            <p class="font-display text-2xl sm:text-3xl font-black text-navy-900 tabular-nums mt-1">3.0&times;</p>
+            <p class="mt-1 text-xs text-slate-600 font-medium leading-relaxed">
+              30.5% exit rate in OT vs. 10.4% in standard hours
             </p>
-            <table class="compact-table">
-              <thead>
-                <tr>
-                  <th>Experience Band</th>
-                  <th>Tenure Rule</th>
-                  <th>Headcount</th>
-                  <th>Turnover Dynamics</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="bold danger">Junior</td>
-                  <td>&lt; 5 Years</td>
-                  <td class="bold">228</td>
-                  <td class="danger">Peak risk &bull; Year 1 cliff</td>
-                </tr>
-                <tr>
-                  <td class="bold">Mid</td>
-                  <td>5 – 9 Years</td>
-                  <td class="bold">493</td>
-                  <td>Moderate flight (15.2%)</td>
-                </tr>
-                <tr>
-                  <td class="bold">Senior</td>
-                  <td>10+ Years</td>
-                  <td class="bold">749</td>
-                  <td>Stable &bull; Equity anchored</td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="callout-strip" style="margin-top: 6px; padding: 4px 7px;">
-              All notebook cells executed cleanly in Python 3.12 with outputs saved visibly.
+            <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <span class="text-slate-500">Impact Cohort</span>
+              <span class="font-semibold text-accent">127 Total Departures</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Highest risk role -->
+          <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 ease-in-out hover:shadow-md hover:scale-[1.01] hover:border-accent/40 relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 to-amber-500"></div>
+            <div class="flex items-center justify-between mb-1">
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Peak Role Risk</p>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Sales Reps</span>
+            </div>
+            <p class="font-display text-2xl sm:text-3xl font-black text-navy-900 tabular-nums mt-1">39.8%</p>
+            <p class="mt-1 text-xs text-slate-600 font-medium leading-relaxed">
+              33 leavers out of 83 staff &mdash; 2.5&times; company average
+            </p>
+            <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <span class="text-slate-500">Median Comp</span>
+              <span class="font-semibold text-navy-900">$2,626 / mo</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Pay gap -->
+          <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 ease-in-out hover:shadow-md hover:scale-[1.01] hover:border-accent/40 relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-cyan-500"></div>
+            <div class="flex items-center justify-between mb-1">
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Base Salary Chasm</p>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">~30% Gap</span>
+            </div>
+            <p class="font-display text-2xl sm:text-3xl font-black text-navy-900 tabular-nums mt-1">$2,046</p>
+            <p class="mt-1 text-xs text-slate-600 font-medium leading-relaxed">
+              Avg. monthly gap: Stayers ($6,833) vs. Leavers ($4,787)
+            </p>
+            <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <span class="text-slate-500">Annual Turnover Cost</span>
+              <span class="font-semibold text-navy-900">~$3.2M &ndash; $4.4M</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Section 4: Power BI Report Architecture -->
-      <div class="section">
-        <div class="section-title">
-          4. Power BI Executive Reporting Suite Architecture
-          <span class="tag">HR_Attrition.pbix &bull; 4 Pages</span>
-        </div>
-        <div class="cols-2">
-          <div class="box">
-            <div class="box-title"><span class="dot"></span>Reporting Structure & Analytical Visuals</div>
-            <ul class="doc-list">
-              <li><strong>Page 1: Executive Overview:</strong> Multi-KPI ribbon, Attrition Rate donut chart, and department comparison identifying Sales as the highest risk (20.6%).</li>
-              <li><strong>Page 2: Outliers & Risk Factors:</strong> Scatter plot analyzing Monthly Income vs. Total Working Years, identifying tenure stagnation and early burnout clusters.</li>
-              <li><strong>Page 3: Trending & Historical Patterns:</strong> Dual-axis combo charts tracking attrition rates across tenure bands, promotion lag, and performance scores.</li>
-              <li><strong>Page 4: Segment Deep Dive:</strong> Multi-dimensional slicing across Job Roles, Overtime, Stock Options, and Demographics with cross-filtering.</li>
-            </ul>
-          </div>
-          <div class="box">
-            <div class="box-title"><span class="dot blue"></span>Visual Identity & Teleperformance Theme</div>
-            <p style="font-size: 8.5px; color: #334155; line-height: 1.4;">
-              Full corporate brand alignment via <code>Teleperformance_Theme.json</code>:
-            </p>
-            <ul class="doc-list blue">
-              <li><strong>Brand Primary:</strong> Teleperformance Deep Navy (<code>#0F1B2D</code>) for structure.</li>
-              <li><strong>Accent & Alerts:</strong> TP Magenta (<code>#E10A6E</code>) for flight risks and outliers.</li>
-              <li><strong>Secondary Bars:</strong> Corporate Blue (<code>#00529F</code>) for stayers and baselines.</li>
-              <li><strong>Consistent Formatting:</strong> All measures strictly formatted (Currency <code>$#,##0</code>, Percentage <code>0.0%</code>, Integer counts).</li>
-            </ul>
-          </div>
-        </div>
+    </div>
+  </section>
+
+  <!-- ============ DETAILED INSIGHTS (TABBED) ============ -->
+  <section id="detailed-insights" class="pb-14 sm:pb-16 scroll-mt-24">
+    <h2 class="font-display text-lg sm:text-xl font-bold text-navy-900 mb-5">Detailed Insights</h2>
+
+    <div class="rounded-2xl border border-slate-200 bg-white shadow-card overflow-hidden">
+      <!-- Tab bar -->
+      <div role="tablist" aria-label="Detailed insight sections" class="flex overflow-x-auto border-b border-slate-200 px-2 sm:px-4">
+        <button id="tab-btn-drivers" class="tab-btn" role="tab" aria-selected="true" aria-controls="tab-drivers" data-tab="drivers" style="padding:14px 18px; font-size:0.875rem; font-weight:600; color:#0F1B2D; white-space:nowrap;">
+          Attrition Drivers
+          <span class="tab-underline" style="transform:scaleX(1);"></span>
+        </button>
+        <button id="tab-btn-roles" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-roles" data-tab="roles" style="padding:14px 18px; font-size:0.875rem; font-weight:600; color:#64748B; white-space:nowrap;">
+          Department &amp; Role Breakdown
+          <span class="tab-underline"></span>
+        </button>
+        <button id="tab-btn-comp" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-comp" data-tab="comp" style="padding:14px 18px; font-size:0.875rem; font-weight:600; color:#64748B; white-space:nowrap;">
+          Compensation &amp; Tenure
+          <span class="tab-underline"></span>
+        </button>
+        <button id="tab-btn-risk" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-risk" data-tab="risk" style="padding:14px 18px; font-size:0.875rem; font-weight:600; color:#64748B; white-space:nowrap;">
+          Risk Segments
+          <span class="tab-underline"></span>
+        </button>
+        <button id="tab-btn-engagement" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-engagement" data-tab="engagement" style="padding:14px 18px; font-size:0.875rem; font-weight:600; color:#64748B; white-space:nowrap;">
+          Engagement &amp; Satisfaction
+          <span class="tab-underline"></span>
+        </button>
+        <button id="tab-btn-human" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-human" data-tab="human" style="padding:14px 18px; font-size:0.875rem; font-weight:600; color:#64748B; white-space:nowrap;">
+          The Human Story &amp; Employee Personas
+          <span class="tab-underline"></span>
+        </button>
       </div>
 
-      <!-- Section 5: Strategic Action Plan & Financial ROI -->
-      <div class="section">
-        <div class="section-title">
-          5. Strategic Action Plan & Estimated Business ROI
-          <span class="tag">3 Prioritized Interventions</span>
-        </div>
-        <table class="compact-table" style="margin-bottom: 7px;">
-          <thead>
-            <tr>
-              <th style="width: 18%;">Priority & Intervention</th>
-              <th style="width: 25%;">Target Audience</th>
-              <th style="width: 37%;">Operational Mechanism</th>
-              <th style="width: 20%;">Projected Retention ROI</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="bold danger">1. Workload Caps & Overtime Relief</td>
-              <td>Sales Representatives & Lab Technicians</td>
-              <td>Implement strict 10-hr/week operational overtime caps; rebalance sales territory quotas; hire ~8 floaters for peak intake.</td>
-              <td class="danger">Reduces OT attrition from 30.5% to ~18%, preserving ~35 exits/year.</td>
-            </tr>
-            <tr>
-              <td class="bold">2. Equity & Stock Option Grants</td>
-              <td>Level-0 Equity Staff in Core Production Roles</td>
-              <td>Extend Level-1 equity participation to high-performing entry/mid operators; apply a 2-year vesting cliff to anchor tenure.</td>
-              <td>Cuts zero-equity flight risk by ~65%; anchors 30+ key operators.</td>
-            </tr>
-            <tr>
-              <td class="bold">3. Onboarding & Promotion Pathways</td>
-              <td>Year 1–3 Hires & Stagnant Veterans (&ge;4 yrs no promo)</td>
-              <td>Structured 90-day onboarding buddy system; annual HR audits for stagnant staff; clear dual-track (specialist vs. manager) paths.</td>
-              <td>Eliminates Year-1 cliff (31.6% of exits); curtails veteran brain drain.</td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Panels -->
+      <div class="p-6 sm:p-8">
 
-        <!-- Executive Financial ROI Strip -->
-        <div class="box" style="background: #FFF0F6; border: 1.5px solid #FBCFE8; padding: 7px 11px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
+        <!-- Panel: Drivers -->
+        <div id="tab-drivers" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-drivers">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div>
-              <span style="font-size: 9px; font-weight: 800; color: #E10A6E; text-transform: uppercase; letter-spacing: 0.5px;">
-                Total Enterprise Financial Impact & Replacement Cost Savings
-              </span>
-              <p style="font-size: 8.5px; color: #1E293B; margin-top: 1px;">
-                Lowering turnover by <strong>4.0%</strong> (from 16.1% to 12.1%) prevents <strong>~59 exits annually</strong>. At an industry benchmark replacement cost of 1.5&times; annual salary (~$75,000 per leaver), this yields <strong>$3.2M – $4.4M in direct cost savings</strong>, self-funding all recommended interventions.
+              <h3 class="font-display text-sm font-bold text-navy-900 mb-4">Attrition rate by condition</h3>
+              <div class="space-y-4">
+
+                <div>
+                  <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-600">Works overtime</span>
+                    <span class="font-semibold text-navy-900 tabular-nums">30.5%</span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div class="risk-bar-fill h-full rounded-full bg-accent" style="width:61%"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-600">Work-life balance rated "Bad"</span>
+                    <span class="font-semibold text-navy-900 tabular-nums">31.3%</span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div class="risk-bar-fill h-full rounded-full bg-accent" style="width:63%; animation-delay:80ms;"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-600">Single (marital status)</span>
+                    <span class="font-semibold text-navy-900 tabular-nums">25.5%</span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div class="risk-bar-fill h-full rounded-full bg-accent/80" style="width:51%; animation-delay:160ms;"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-600">Frequent business travel</span>
+                    <span class="font-semibold text-navy-900 tabular-nums">24.9%</span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div class="risk-bar-fill h-full rounded-full bg-accent/70" style="width:50%; animation-delay:240ms;"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-600">Zero stock options</span>
+                    <span class="font-semibold text-navy-900 tabular-nums">24.4%</span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div class="risk-bar-fill h-full rounded-full bg-accent/60" style="width:49%; animation-delay:320ms;"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-400">Company average (baseline)</span>
+                    <span class="font-semibold text-slate-400 tabular-nums">16.1%</span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div class="risk-bar-fill h-full rounded-full bg-accent/40" style="width:32%; animation-delay:400ms;"></div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div>
+              <h3 class="font-display text-sm font-bold text-navy-900 mb-4">What the pattern shows</h3>
+              <p class="text-sm leading-relaxed text-slate-600">
+                Employees who exit share a consistent profile: younger, single, working overtime,
+                without an equity stake, and reporting poor work-life balance. Employees with none
+                of these conditions leave at rates well below the company average, while employees
+                with two or more of these conditions leave at rates approaching one in three.
+              </p>
+              <div class="mt-6 grid grid-cols-2 gap-3">
+                <div class="rounded-xl bg-navy-900 p-4">
+                  <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-300">Avg. Tenure</p>
+                  <p class="font-display mt-1 text-xl font-bold text-white">5.1 vs 7.4 yrs</p>
+                  <p class="mt-0.5 text-[11px] text-slate-400">Leavers vs. stayers</p>
+                </div>
+                <div class="rounded-xl bg-navy-900 p-4">
+                  <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-300">Avg. Age</p>
+                  <p class="font-display mt-1 text-xl font-bold text-white">33.6 vs 37.6</p>
+                  <p class="mt-0.5 text-[11px] text-slate-400">Leavers vs. stayers</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel: Department & Role -->
+        <div id="tab-roles" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-roles">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div>
+              <h3 class="font-display text-sm font-bold text-navy-900 mb-4">Attrition by department</h3>
+              <div class="space-y-4">
+                <div>
+                  <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-600">Sales</span>
+                    <span class="font-semibold text-navy-900 tabular-nums">20.6%</span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div class="risk-bar-fill h-full rounded-full bg-accent" style="width:52%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-600">Human Resources</span>
+                    <span class="font-semibold text-navy-900 tabular-nums">19.0%</span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div class="risk-bar-fill h-full rounded-full bg-accent/80" style="width:48%; animation-delay:80ms;"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-600">Research &amp; Development</span>
+                    <span class="font-semibold text-navy-900 tabular-nums">13.8%</span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div class="risk-bar-fill h-full rounded-full bg-accent/60" style="width:35%; animation-delay:160ms;"></div>
+                  </div>
+                </div>
+              </div>
+              <p class="mt-4 text-xs text-slate-500 leading-relaxed">
+                R&amp;D shows the lowest rate but carries the largest headcount (961 employees),
+                so its absolute number of departures still outweighs HR's in raw terms.
               </p>
             </div>
-            <div style="text-align: right; min-width: 110px;">
-              <span style="font-size: 15px; font-weight: 900; color: #E10A6E;">$3.2M – $4.4M</span><br>
-              <span style="font-size: 7.5px; font-weight: 700; color: #64748B; text-transform: uppercase;">Annual Net Value</span>
+
+            <div>
+              <h3 class="font-display text-sm font-bold text-navy-900 mb-4">Roles at the extremes</h3>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between rounded-lg bg-accent-50 px-4 py-3">
+                  <span class="text-sm font-semibold text-navy-900">Sales Representative</span>
+                  <span class="text-sm font-bold text-accent-700 tabular-nums">39.8%</span>
+                </div>
+                <div class="flex items-center justify-between rounded-lg bg-accent-50 px-4 py-3">
+                  <span class="text-sm font-semibold text-navy-900">Laboratory Technician</span>
+                  <span class="text-sm font-bold text-accent-700 tabular-nums">23.9%</span>
+                </div>
+                <div class="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
+                  <span class="text-sm font-semibold text-navy-900">Manager</span>
+                  <span class="text-sm font-bold text-slate-500 tabular-nums">4.9%</span>
+                </div>
+                <div class="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
+                  <span class="text-sm font-semibold text-navy-900">Research Director</span>
+                  <span class="text-sm font-bold text-slate-500 tabular-nums">2.5%</span>
+                </div>
+              </div>
+              <p class="mt-4 text-xs text-slate-500 leading-relaxed">
+                The gap between the highest and lowest-risk roles spans more than 37 percentage
+                points, confirming role is one of the strongest single indicators of exit risk.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel: Compensation & Tenure -->
+        <div id="tab-comp" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-comp">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div class="rounded-xl border border-slate-200 p-5">
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Avg. Monthly Income</p>
+              <p class="font-display text-2xl font-extrabold text-navy-900">$4,787<span class="text-sm font-semibold text-slate-400"> leavers</span></p>
+              <p class="font-display text-2xl font-extrabold text-navy-900 mt-1">$6,833<span class="text-sm font-semibold text-slate-400"> stayers</span></p>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-5">
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Stock Options = 0</p>
+              <p class="font-display text-2xl font-extrabold text-navy-900">24.4%</p>
+              <p class="text-xs text-slate-500 mt-1">exit rate vs. ~8&ndash;9% for employees holding any equity level</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-5">
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Salary Hike %</p>
+              <p class="font-display text-2xl font-extrabold text-navy-900">No pattern</p>
+              <p class="text-xs text-slate-500 mt-1">last salary increase size shows no meaningful relationship to exit likelihood</p>
+            </div>
+          </div>
+          <div class="rounded-xl bg-slate-50 border border-slate-200 p-5">
+            <p class="text-sm leading-relaxed text-slate-600">
+              Compensation matters, but not in the way a simple raise would fix. The income gap
+              tracks tenure and job level more than it tracks pay policy &mdash; leavers are
+              concentrated in early-career, lower-band roles rather than being underpaid relative
+              to peers at the same level. Equity participation, by contrast, shows a sharp and
+              consistent link to retention regardless of income band.
+            </p>
+          </div>
+        </div>
+
+        <!-- Panel: Risk Segments -->
+        <div id="tab-risk" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-risk">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div class="rounded-xl border border-accent-100 bg-accent-50 p-5">
+              <p class="text-xs font-bold uppercase tracking-wider text-accent-700 mb-2">Highest Exposure</p>
+              <p class="text-sm font-semibold text-navy-900 mb-1.5">Overtime + Single + No Equity + &lt;3 yrs tenure</p>
+              <p class="text-xs leading-relaxed text-accent-700">This combined profile shows the steepest exit likelihood of any segment identified in the workforce.</p>
+            </div>
+            <div class="rounded-xl border border-amber-200 bg-amber-50 p-5">
+              <p class="text-xs font-bold uppercase tracking-wider text-amber-700 mb-2">Moderate Exposure</p>
+              <p class="text-sm font-semibold text-navy-900 mb-1.5">Frequent travel or poor work-life balance alone</p>
+              <p class="text-xs leading-relaxed text-amber-700">Elevated individually (24&ndash;31%), these conditions compound sharply when combined with overtime.</p>
+            </div>
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+              <p class="text-xs font-bold uppercase tracking-wider text-emerald-700 mb-2">Lowest Exposure</p>
+              <p class="text-sm font-semibold text-navy-900 mb-1.5">Senior, tenured, equity-holding employees</p>
+              <p class="text-xs leading-relaxed text-emerald-700">Managers and Research Directors with 10+ years' experience show exit rates under 5%.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel: Engagement & Satisfaction -->
+        <div id="tab-engagement" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-engagement">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div>
+              <h3 class="font-display text-sm font-bold text-navy-900 mb-4">Attrition by work-life balance rating</h3>
+              <div class="space-y-4">
+                <div>
+                  <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-600">Rated "Bad" (1)</span>
+                    <span class="font-semibold text-navy-900 tabular-nums">31.3%</span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div class="risk-bar-fill h-full rounded-full bg-accent" style="width:63%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-600">Rated "Good" (2)</span>
+                    <span class="font-semibold text-navy-900 tabular-nums">18.0%</span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div class="risk-bar-fill h-full rounded-full bg-accent/70" style="width:36%; animation-delay:80ms;"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-600">Rated "Better" (3)</span>
+                    <span class="font-semibold text-navy-900 tabular-nums">14.5%</span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div class="risk-bar-fill h-full rounded-full bg-accent/60" style="width:29%; animation-delay:160ms;"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-600">Rated "Best" (4)</span>
+                    <span class="font-semibold text-navy-900 tabular-nums">17.3%</span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div class="risk-bar-fill h-full rounded-full bg-accent/50" style="width:35%; animation-delay:240ms;"></div>
+                  </div>
+                </div>
+              </div>
+              <p class="mt-4 text-xs text-slate-500 leading-relaxed">
+                Risk drops sharply once balance moves from "Bad" to "Good" or higher, and stays
+                low across the remaining ratings &mdash; the steepest gain sits at the bottom of the scale.
+              </p>
+            </div>
+
+            <div>
+              <h3 class="font-display text-sm font-bold text-navy-900 mb-4">Job &amp; environment satisfaction</h3>
+              <div class="space-y-3 mb-6">
+                <div class="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
+                  <span class="text-sm font-medium text-slate-600">Job Satisfaction (correlation with exit)</span>
+                  <span class="text-sm font-bold text-navy-900 tabular-nums">&minus;0.10</span>
+                </div>
+                <div class="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
+                  <span class="text-sm font-medium text-slate-600">Environment Satisfaction</span>
+                  <span class="text-sm font-bold text-navy-900 tabular-nums">&minus;0.10</span>
+                </div>
+                <div class="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
+                  <span class="text-sm font-medium text-slate-600">Job Involvement</span>
+                  <span class="text-sm font-bold text-navy-900 tabular-nums">&minus;0.13</span>
+                </div>
+              </div>
+              <div class="rounded-xl bg-slate-50 border border-slate-200 p-5">
+                <p class="text-sm leading-relaxed text-slate-600">
+                  Every engagement measure moves in the expected direction &mdash; higher scores
+                  associate with lower exit risk &mdash; but none of them individually explain as
+                  much as overtime or work-life balance. Engagement is best read as a secondary,
+                  reinforcing signal rather than a standalone predictor.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel: The Human Story & Employee Personas -->
+        <div id="tab-human" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-human">
+          <div class="mb-8">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="inline-flex items-center rounded-full bg-accent-50 px-2.5 py-0.5 text-xs font-bold text-accent">
+                Empathetic Workforce Storytelling
+              </span>
+              <span class="text-xs font-semibold text-slate-400">Qualitative Synthesis</span>
+            </div>
+            <h3 class="font-display text-lg sm:text-xl font-bold text-navy-900">Behind Every Data Point is a Human Career</h3>
+            <p class="text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
+              237 departures are not just numbers on a dashboard; they represent 237 talented individuals whose career paths reached a point of exhaustion, career dead-ends, or feeling undervalued. Based on extensive cross-sectional data synthesis, here are the real human employee journeys driving our turnover numbers:
+            </p>
+          </div>
+
+          <!-- 4 Employee Persona Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <!-- Persona 1 -->
+            <div class="rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-50/50 via-white to-slate-50 p-6 shadow-sm hover:shadow-md transition-all">
+              <div class="flex items-start justify-between gap-4 mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="h-12 w-12 rounded-full bg-accent text-white font-bold flex items-center justify-center text-base shadow-sm">
+                    MT
+                  </div>
+                  <div>
+                    <h4 class="font-display text-base font-bold text-navy-900">Marcus T., 26</h4>
+                    <p class="text-xs font-semibold text-accent">Sales Representative &bull; 11 Months at TP</p>
+                  </div>
+                </div>
+                <span class="inline-flex items-center rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-bold text-rose-800">
+                  39.8% Role Attrition
+                </span>
+              </div>
+              <blockquote class="italic text-xs sm:text-sm text-slate-700 leading-relaxed pl-3 border-l-2 border-accent mb-4">
+                &ldquo;I joined Teleperformance eager to prove myself. But working 50+ hours every week to chase aggressive quotas for a base salary of $2,600/month, without overtime compensation or any equity stake, wore me down. When a competitor offered 15% more with predictable 40-hour weeks, I felt I had no choice.&rdquo;
+              </blockquote>
+              <div class="grid grid-cols-2 gap-2 text-[11px] bg-white rounded-xl p-3 border border-slate-100 text-slate-600">
+                <div><span>Monthly Base:</span> <strong class="text-navy-900">$2,626 (Lowest in Co.)</strong></div>
+                <div><span>Overtime Status:</span> <strong class="text-rose-600">Yes (30.5% Flight Risk)</strong></div>
+                <div><span>Equity Level:</span> <strong class="text-navy-900">0 Stock Options</strong></div>
+                <div><span>Primary Need:</span> <strong class="text-accent">Quota relief &amp; base pay</strong></div>
+              </div>
+            </div>
+
+            <!-- Persona 2 -->
+            <div class="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/50 via-white to-slate-50 p-6 shadow-sm hover:shadow-md transition-all">
+              <div class="flex items-start justify-between gap-4 mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="h-12 w-12 rounded-full bg-blue-700 text-white font-bold flex items-center justify-center text-base shadow-sm">
+                    ER
+                  </div>
+                  <div>
+                    <h4 class="font-display text-base font-bold text-navy-900">Elena R., 29</h4>
+                    <p class="text-xs font-semibold text-blue-700">Laboratory Technician &bull; 2.2 Years at TP</p>
+                  </div>
+                </div>
+                <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-[11px] font-bold text-blue-800">
+                  62 Exits (Highest Volume)
+                </span>
+              </div>
+              <blockquote class="italic text-xs sm:text-sm text-slate-700 leading-relaxed pl-3 border-l-2 border-blue-600 mb-4">
+                &ldquo;Diagnostic workloads kept climbing, and weekend shifts became the norm rather than the exception. With zero stock options and pay lagging behind inflation at $3,200/month, I felt like a disposable operator rather than a valued research contributor.&rdquo;
+              </blockquote>
+              <div class="grid grid-cols-2 gap-2 text-[11px] bg-white rounded-xl p-3 border border-slate-100 text-slate-600">
+                <div><span>Monthly Base:</span> <strong class="text-navy-900">$3,237 (Operational)</strong></div>
+                <div><span>Work-Life Balance:</span> <strong class="text-rose-600">Rated &quot;Bad&quot; (31.3% Risk)</strong></div>
+                <div><span>Equity Level:</span> <strong class="text-navy-900">0 Stock Options</strong></div>
+                <div><span>Primary Need:</span> <strong class="text-blue-700">Staffing support &amp; equity</strong></div>
+              </div>
+            </div>
+
+            <!-- Persona 3 -->
+            <div class="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/50 via-white to-slate-50 p-6 shadow-sm hover:shadow-md transition-all">
+              <div class="flex items-start justify-between gap-4 mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="h-12 w-12 rounded-full bg-amber-600 text-white font-bold flex items-center justify-center text-base shadow-sm">
+                    DK
+                  </div>
+                  <div>
+                    <h4 class="font-display text-base font-bold text-navy-900">David K., 44</h4>
+                    <p class="text-xs font-semibold text-amber-700">Senior Research Specialist &bull; 14 Years at TP</p>
+                  </div>
+                </div>
+                <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
+                  Career Stagnation Cohort
+                </span>
+              </div>
+              <blockquote class="italic text-xs sm:text-sm text-slate-700 leading-relaxed pl-3 border-l-2 border-amber-500 mb-4">
+                &ldquo;I spent 14 years dedicating my career to TP. But for the last 9 consecutive years, my promotion reviews were postponed despite excellent performance. When outside candidates were hired into director roles above me, the unwritten contract of loyalty was broken.&rdquo;
+              </blockquote>
+              <div class="grid grid-cols-2 gap-2 text-[11px] bg-white rounded-xl p-3 border border-slate-100 text-slate-600">
+                <div><span>Tenure at TP:</span> <strong class="text-navy-900">14 Years of Loyalty</strong></div>
+                <div><span>Promotion Drought:</span> <strong class="text-amber-700">9 Consecutive Years Frozen</strong></div>
+                <div><span>Cohorts Impacted:</span> <strong class="text-navy-900">29 Veteran Leavers</strong></div>
+                <div><span>Primary Need:</span> <strong class="text-amber-700">Internal progression tracks</strong></div>
+              </div>
+            </div>
+
+            <!-- Persona 4 -->
+            <div class="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/50 via-white to-slate-50 p-6 shadow-sm hover:shadow-md transition-all">
+              <div class="flex items-start justify-between gap-4 mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="h-12 w-12 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-base shadow-sm">
+                    AM
+                  </div>
+                  <div>
+                    <h4 class="font-display text-base font-bold text-navy-900">Aisha M., 24</h4>
+                    <p class="text-xs font-semibold text-emerald-700">Research Associate &bull; 9 Months at TP</p>
+                  </div>
+                </div>
+                <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                  Year-1 Flight Cliff
+                </span>
+              </div>
+              <blockquote class="italic text-xs sm:text-sm text-slate-700 leading-relaxed pl-3 border-l-2 border-emerald-500 mb-4">
+                &ldquo;I relocated alone for this role. Between frequent business travel, living far from family, and having no assigned mentor, I felt isolated. With no structured check-ins during my first 6 months, when frustration mounted, there was no safety net to keep me.&rdquo;
+              </blockquote>
+              <div class="grid grid-cols-2 gap-2 text-[11px] bg-white rounded-xl p-3 border border-slate-100 text-slate-600">
+                <div><span>Tenure Band:</span> <strong class="text-navy-900">&lt; 1 Year (31.6% of exits)</strong></div>
+                <div><span>Marital Status:</span> <strong class="text-emerald-700">Single (25.5% Exit Rate)</strong></div>
+                <div><span>Travel Demand:</span> <strong class="text-navy-900">Frequent (24.9% Risk)</strong></div>
+                <div><span>Primary Need:</span> <strong class="text-emerald-700">90-Day buddy &amp; onboarding</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empathy-to-Action Framework Banner -->
+          <div class="rounded-xl bg-navy-900 p-6 sm:p-7 text-white relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-accent/20 rounded-full blur-2xl pointer-events-none"></div>
+            <h4 class="font-display text-base font-bold text-white mb-2">Transforming Cold Analytics Into Empathy-Driven Retention</h4>
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4 max-w-3xl">
+              Retention is not achieved through spreadsheets or broad corporate declarations. It requires listening to the human signals embedded in the data: capping the overtime that exhausts Marcus and Elena, recognizing the long-term dedication of veterans like David, and building an onboarding community that protects newcomers like Aisha.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-white/10 text-xs">
+              <div class="flex items-center gap-2">
+                <span class="h-2 w-2 rounded-full bg-accent"></span>
+                <span class="text-slate-300"><strong class="text-white">Protect Wellbeing:</strong> 10-Hr OT Cap</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="h-2 w-2 rounded-full bg-blue-400"></span>
+                <span class="text-slate-300"><strong class="text-white">Share Ownership:</strong> Entry-Level RSUs</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+                <span class="text-slate-300"><strong class="text-white">Honor Loyalty:</strong> Promotion Audits</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============ KEY DATA OUTLIERS CALLOUT CARD ============ -->
+    <div id="key-data-outliers" class="mt-8 rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-50/60 via-white to-slate-50 p-6 sm:p-8 shadow-card scroll-mt-24">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-rose-100">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-white shadow-sm shrink-0">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-display text-base sm:text-lg font-bold text-navy-900">Key Data Outliers &amp; Statistical Anomalies</h3>
+              <span class="inline-flex items-center rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-bold text-rose-800">
+                Critical Findings
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">Deep-dive exploratory analysis uncovering severe friction points and non-linear turnover risk</p>
+          </div>
+        </div>
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">EDA Anomaly Analysis</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- Outlier 1: Sales Representative Extreme Attrition -->
+        <div class="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:border-accent/40 hover:shadow-md flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2.5">
+              <span class="inline-flex items-center rounded-full bg-accent-50 px-2.5 py-0.5 text-xs font-bold text-accent">
+                Acute Role Flight
+              </span>
+              <span class="text-[11px] font-semibold text-slate-400">Quota Burnout</span>
+            </div>
+            <h4 class="text-sm font-bold text-navy-900 mb-1.5">Sales Representatives at 39.8% Attrition</h4>
+            <p class="text-xs text-slate-600 leading-relaxed mb-3">
+              Sales Reps suffer an alarming <strong>39.8% exit rate</strong> (33 departures of 83 headcount)—nearly <strong>2.5&times; the enterprise baseline</strong> (16.1%). Driven by aggressive targets, lowest median base salary in the company (<strong>$2,626/mo</strong>), and high early-tenure turnover.
+            </p>
+          </div>
+          <div class="mt-2 space-y-1.5 rounded-lg bg-slate-50 p-2.5 text-[11px]">
+            <div class="flex justify-between text-slate-600">
+              <span>Avg Monthly Income:</span>
+              <strong class="text-navy-900">$2,626 (Lowest in Co.)</strong>
+            </div>
+            <div class="flex justify-between text-slate-600">
+              <span>Attrition Multiplier:</span>
+              <strong class="text-accent">2.47&times; Company Avg</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Outlier 2: Stagnant High-Tenure Exits -->
+        <div class="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:border-amber-300 hover:shadow-md flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2.5">
+              <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700">
+                Career Stagnation
+              </span>
+              <span class="text-[11px] font-semibold text-slate-400">Tenure Disillusionment</span>
+            </div>
+            <h4 class="text-sm font-bold text-navy-900 mb-1.5">29 Long-Tenured Leavers (7–15 Yrs No Promo)</h4>
+            <p class="text-xs text-slate-600 leading-relaxed mb-3">
+              A distinct anomaly cohort of <strong>29 veteran employees (7–15+ years at TP)</strong> exited after enduring <strong>7 to 15 consecutive years without a single promotion</strong>. Even senior staff (Research Directors &amp; Managers with up to 40 years of service) left due to career dead-ends.
+            </p>
+          </div>
+          <div class="mt-2 space-y-1.5 rounded-lg bg-slate-50 p-2.5 text-[11px]">
+            <div class="flex justify-between text-slate-600">
+              <span>Promotion Freeze:</span>
+              <strong class="text-amber-800">7 – 15 Yrs Without Promo</strong>
+            </div>
+            <div class="flex justify-between text-slate-600">
+              <span>Impacted Cohort:</span>
+              <strong class="text-navy-900">29 High-Tenure Exits</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Outlier 3: Low-Salary & Overtime Compounding -->
+        <div class="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:border-rose-300 hover:shadow-md flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2.5">
+              <span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+                Toxic Compound Squeeze
+              </span>
+              <span class="text-[11px] font-semibold text-slate-400">Comp &amp; Workload</span>
+            </div>
+            <h4 class="text-sm font-bold text-navy-900 mb-1.5">Low-Salary &amp; Overtime Compounding Trap</h4>
+            <p class="text-xs text-slate-600 leading-relaxed mb-3">
+              In Laboratory Technicians (avg $3,237) and Sales Reps ($2,626), employees subjected to mandatory overtime combined with <strong>zero stock options</strong> experience catastrophic attrition rates exceeding <strong>50%</strong>. Overtime alone triples exit risk (<strong>30.5% vs 10.4%</strong>).
+            </p>
+          </div>
+          <div class="mt-2 space-y-1.5 rounded-lg bg-slate-50 p-2.5 text-[11px]">
+            <div class="flex justify-between text-slate-600">
+              <span>Overtime Risk Surge:</span>
+              <strong class="text-rose-700">30.5% vs 10.4% (3.0&times;)</strong>
+            </div>
+            <div class="flex justify-between text-slate-600">
+              <span>Zero Equity Attrition:</span>
+              <strong class="text-navy-900">24.4% (154 Leavers)</strong>
             </div>
           </div>
         </div>
       </div>
     </div>
+  </section>
 
-    <!-- Footer -->
-    <div class="footer">
-      <div class="footer-left">Teleperformance &bull; Global Business Services (GBS BI Hub) &bull; Case Study Deliverable</div>
-      <div class="footer-right">Page 2 of 2</div>
+  <!-- ============ STRATEGIC RECOMMENDATIONS ============ -->
+  <section id="recommendations" class="pb-16 sm:pb-20 scroll-mt-24">
+    <div class="anim-card stagger-6 rounded-2xl bg-navy-900 p-7 sm:p-10 relative overflow-hidden">
+      <div class="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-accent/20 blur-3xl pointer-events-none"></div>
+      <div class="relative">
+        <p class="font-display text-xs font-bold tracking-[0.18em] text-accent uppercase mb-2">
+          Strategic Recommendations
+        </p>
+        <h2 class="font-display text-xl sm:text-2xl font-bold text-white mb-8 max-w-2xl">
+          Where to focus retention investment
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="rounded-xl bg-white/5 ring-1 ring-white/10 p-5 transition-all duration-300 ease-in-out hover:bg-white/10 hover:scale-[1.01]">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-accent mb-2">Priority One</p>
+            <p class="text-sm font-semibold text-white mb-1.5">Reduce overtime load in Sales and Lab roles</p>
+            <p class="text-xs leading-relaxed text-slate-300">These two roles combine the highest headcount exposure and the strongest single behavioral driver of exit.</p>
+          </div>
+          <div class="rounded-xl bg-white/5 ring-1 ring-white/10 p-5 transition-all duration-300 ease-in-out hover:bg-white/10 hover:scale-[1.01]">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-accent mb-2">Priority Two</p>
+            <p class="text-sm font-semibold text-white mb-1.5">Extend equity to zero-option employees</p>
+            <p class="text-xs leading-relaxed text-slate-300">Any level of stock participation is associated with roughly a two-thirds reduction in exit rate.</p>
+          </div>
+          <div class="rounded-xl bg-white/5 ring-1 ring-white/10 p-5 transition-all duration-300 ease-in-out hover:bg-white/10 hover:scale-[1.01]">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-accent mb-2">Priority Three</p>
+            <p class="text-sm font-semibold text-white mb-1.5">Protect early-tenure, single employees</p>
+            <p class="text-xs leading-relaxed text-slate-300">This group carries the highest combined risk profile and the shortest average tenure before exit.</p>
+          </div>
+        </div>
+      </div>
     </div>
+  </section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="border-t border-slate-200 bg-white">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+    <p class="text-xs text-slate-400">&copy; 2026 Teleperformance &middot; BI Developer</p>
+    <p class="text-xs text-slate-400">HR Attrition Summary</p>
   </div>
-</div>
+</footer>
+
+<script>
+  (function () {
+    const tabs = document.querySelectorAll('.tab-btn');
+    const panels = {
+      drivers: document.getElementById('tab-drivers'),
+      roles: document.getElementById('tab-roles'),
+      comp: document.getElementById('tab-comp'),
+      risk: document.getElementById('tab-risk'),
+      engagement: document.getElementById('tab-engagement'),
+      human: document.getElementById('tab-human'),
+    };
+
+    function activate(tabName) {
+      tabs.forEach((btn) => {
+        const isActive = btn.dataset.tab === tabName;
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        btn.style.color = isActive ? '#0F1B2D' : '#64748B';
+      });
+      Object.keys(panels).forEach((key) => {
+        if (key === tabName) {
+          panels[key].classList.remove('hidden');
+        } else {
+          panels[key].classList.add('hidden');
+        }
+      });
+    }
+
+    tabs.forEach((btn) => {
+      btn.addEventListener('click', () => activate(btn.dataset.tab));
+      btn.addEventListener('keydown', (e) => {
+        const list = Array.from(tabs);
+        const idx = list.indexOf(btn);
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          const next = list[(idx + 1) % list.length];
+          next.focus();
+          activate(next.dataset.tab);
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const prev = list[(idx - 1 + list.length) % list.length];
+          prev.focus();
+          activate(prev.dataset.tab);
+        }
+      });
+    });
+
+    // ---- Info / navigation sidebar ----
+    const trigger = document.getElementById('info-trigger');
+    const sidebar = document.getElementById('info-sidebar');
+    const overlay = document.getElementById('info-overlay');
+    const closeBtn = document.getElementById('info-close');
+
+    function openSidebar() {
+      sidebar.classList.remove('translate-x-full');
+      overlay.classList.remove('opacity-0', 'pointer-events-none');
+      trigger.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeSidebar() {
+      sidebar.classList.add('translate-x-full');
+      overlay.classList.add('opacity-0', 'pointer-events-none');
+      trigger.setAttribute('aria-expanded', 'false');
+    }
+
+    trigger.addEventListener('click', openSidebar);
+    closeBtn.addEventListener('click', closeSidebar);
+    overlay.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSidebar();
+    });
+
+    // Sidebar links that jump to a specific tab within Detailed Insights
+    document.querySelectorAll('.nav-goto-btn[data-goto]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.goto;
+        activate(target);
+        closeSidebar();
+        window.setTimeout(() => {
+          document.getElementById('detailed-insights').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+      });
+    });
+
+    // Sidebar link that scrolls straight to target section (no tab to activate)
+    document.querySelectorAll('.nav-goto-btn[data-goto-scroll-only]').forEach((link) => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = (link.getAttribute('href') || '').replace('#', '');
+        closeSidebar();
+        window.setTimeout(() => {
+          const el = document.getElementById(targetId);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 150);
+      });
+    });
+  })();
+</script>
 
 </body>
 </html>
